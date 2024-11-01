@@ -1,0 +1,55 @@
+import numpy as np
+import unittest
+
+def time_to_cyclic_features(hour):
+    """Converts an hour (0-24) into cyclic sine and cosine features."""
+    radians = 2 * np.pi * (hour / 24.0)
+    return np.sin(radians), np.cos(radians)
+
+def time_difference(hour1, hour2):
+    """Calculates the time difference between two hours in a cyclic manner."""
+    sin1, cos1 = time_to_cyclic_features(hour1)
+    sin2, cos2 = time_to_cyclic_features(hour2)
+    # Compute the Euclidean distance between the two points in the cyclic space
+    return np.arccos(sin1 * sin2 + cos1 * cos2) * (24 / (2 * np.pi))
+
+# Unit Tests and Functional Tests
+class TestCyclicTimeEncoding(unittest.TestCase):
+
+    def test_time_to_cyclic_features(self):
+        # Check if midnight and 24 are the same point
+        sin0, cos0 = time_to_cyclic_features(0)
+        sin24, cos24 = time_to_cyclic_features(24)
+        self.assertAlmostEqual(sin0, sin24, delta=0.001)
+        self.assertAlmostEqual(cos0, cos24, delta=0.001)
+
+    def test_time_difference_cross_midnight(self):
+        # Testing 23:00 and 01:00, expected difference is 2 hours
+        diff = time_difference(23, 1)
+        self.assertAlmostEqual(diff, 2, delta=0.1)
+
+    def test_time_difference_noon_to_midnight(self):
+        # Testing 12:00 (noon) and 0:00 (midnight), expected difference is 12 hours
+        diff = time_difference(12, 0)
+        self.assertAlmostEqual(diff, 12, delta=0.1)
+
+    def test_time_difference_same_time(self):
+        # Testing same time, expected difference is 0
+        diff = time_difference(15, 15)
+        self.assertAlmostEqual(diff, 0, delta=0.1)
+
+    def test_time_difference_halfway(self):
+        # Testing 6:00 and 18:00, should be 12 hours apart
+        diff = time_difference(6, 18)
+        self.assertAlmostEqual(diff, 12, delta=0.1)
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+
+Same Point at Midnight (0 and 24): Verifies that 0:00 and 24:00 are encoded to the same point.
+Crossing Midnight (23:00 to 01:00): Tests that the function correctly identifies the 2-hour difference between times on either side of midnight.
+Noon to Midnight (12:00 to 0:00): Verifies that the function handles a direct opposite time difference (should be 12 hours).
+Same Time (15:00 to 15:00): Ensures the function correctly returns 0 for identical times.
+Halfway (6:00 to 18:00): Tests that times exactly opposite each other (6:00 and 18:00) yield a 12-hour difference.
