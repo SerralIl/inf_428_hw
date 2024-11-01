@@ -1,3 +1,4 @@
+1.
 class Solution {
     public int findLengthOfLCIS(int[] nums) {
         int count = 1;
@@ -19,3 +20,50 @@ Code works easily. First we create to variables count and max. Next we start a l
 If the current number of array bigger than the previus, than we increase "current".
 Else we just retern it to 1. And each hop of loop we get the maximum of "curent" and "max".
 When loop ends we return max.
+
+
+2.
+class Solution {
+    public void merge(int[] nums1, int m, int[] nums2, int n) {
+        int midl = m - 1;
+        int second = n - 1;
+        int right = m + n - 1;
+
+        while (second >= 0) {
+            if (midl >= 0 && nums1[midl] > nums2[second]) {
+                nums1[right] = nums1[midl];
+                midl--;
+            } else {
+                nums1[right] = nums2[second];
+                second--;
+            }
+            right--;
+        }        
+    }
+}
+
+midl points to the end of the actual numbers in nums1.
+second points to the end of nums2.
+right points to the last available spot in nums1.
+If nums1[midl] is bigger, put it at nums1[right] and move midl and right one step left.
+If nums2[second] is bigger, place it in nums1[right] and move second and right one step left.
+Repeat until all elements of nums2 are placed into nums1.
+nums1 now contains all elements from both arrays in sorted order.
+
+3.
+class Solution {
+    public int[] intersection(int[] nums1, int[] nums2) {
+        int[] count = new int[1001];
+        List<Integer> result = new ArrayList<Integer>();
+        for(int t : nums2) count[t]++;
+        for(int t : nums1){
+            if(count[t]>=1) {result.add(t);count[t]=0;}
+        }
+        return result.stream().mapToInt(i->i).toArray(); 
+    }
+}
+
+Create an array count to track which numbers are in nums2.
+For each number in nums2, mark it as present by increasing its count in count.
+If the number is marked in count, it means it’s in both arrays, so add it to the result and reset its count to 0 to avoid adding it again.
+Convert the list of common numbers to an array and return it.
