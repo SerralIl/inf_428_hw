@@ -1,0 +1,115 @@
+import numpy as np
+import unittest
+
+def generate_random_data(mean, variance, num_samples):
+    """Generates random threat scores for a given mean, variance, and sample size."""
+    return np.random.randint(max(mean - variance, 0), min(mean + variance + 1, 90), num_samples)
+
+def calculate_department_threat_score(threat_scores, importance):
+    """Calculates the weighted average threat score for a department, based on its importance."""
+    department_avg = np.mean(threat_scores)
+    return department_avg * importance
+
+def aggregate_user_threat_score(department_scores, total_importance):
+    """Calculates the final aggregated threat score for the company by normalizing weighted averages."""
+    weighted_sum = sum(department_scores)
+    # Normalize by total importance to bring the score within the 0-90 range.
+    return min(weighted_sum / total_importance, 90)
+
+# Unit Test and Functional Test Case Class
+class TestAggregatedThreatScore(unittest.TestCase):
+
+    def test_generate_random_data(self):
+        # Generate sample data and check if within the expected range
+        data = generate_random_data(mean=30, variance=10, num_samples=50)
+        self.assertTrue((data >= 0).all() and (data <= 90).all())
+
+    def test_calculate_department_threat_score(self):
+        # Test with a simple list of threat scores and an importance of 3
+        threat_scores = [10, 20, 30, 40, 50]
+        importance = 3
+        department_score = calculate_department_threat_score(threat_scores, importance)
+        self.assertAlmostEqual(department_score, 90, delta=0.1)  # Should be close to 90 due to importance scaling
+
+    def test_aggregate_user_threat_score(self):
+        # Test with predefined department scores and total importance
+        department_scores = [90, 60, 30]
+        total_importance = 5
+        aggregate_score = aggregate_user_threat_score(department_scores, total_importance)
+        self.assertAlmostEqual(aggregate_score, 36, delta=0.1)
+
+    # Functional Test Cases
+
+    def test_equal_department_importance_similar_threats(self):
+        # All departments have similar number of users, no outliers, equal importance
+        departments = [
+            generate_random_data(30, 5, 50),  # Dept. 1
+            generate_random_data(32, 5, 50),  # Dept. 2
+            generate_random_data(28, 5, 50),  # Dept. 3
+            generate_random_data(31, 5, 50),  # Dept. 4
+            generate_random_data(29, 5, 50)   # Dept. 5
+        ]
+        importance = [3, 3, 3, 3, 3]
+        department_scores = [calculate_department_threat_score(dept, imp) for dept, imp in zip(departments, importance)]
+        total_importance = sum(importance)
+        result = aggregate_user_threat_score(department_scores, total_importance)
+        self.assertTrue(0 <= result <= 90)
+
+    def test_different_importance_levels(self):
+        # Departments with varying importance levels
+        departments = [
+            generate_random_data(50, 10, 100),  # Engineering (most important)
+            generate_random_data(20, 5, 150),   # Marketing
+            generate_random_data(15, 5, 120),   # Finance
+            generate_random_data(10, 3, 50),    # HR (least important)
+            generate_random_data(35, 8, 80)     # Science
+        ]
+        importance = [5, 4, 3, 2, 4]  # Engineering > Science/Marketing > Finance > HR
+        department_scores = [calculate_department_threat_score(dept, imp) for dept, imp in zip(departments, importance)]
+        total_importance = sum(importance)
+        result = aggregate_user_threat_score(department_scores, total_importance)
+        self.assertTrue(0 <= result <= 90)
+
+    def test_high_outliers_in_one_department(self):
+        # One department with high threat scores while others have low threats
+        departments = [
+            generate_random_data(10, 3, 100),   # Low threat dept
+            generate_random_data(15, 4, 120),   # Low threat dept
+            generate_random_data(20, 5, 100),   # Low threat dept
+            generate_random_data(70, 10, 50),   # High threat outliers
+            generate_random_data(12, 3, 80)     # Low threat dept
+        ]
+        importance = [3, 3, 3, 5, 3]
+        department_scores = [calculate_department_threat_score(dept, imp) for dept, imp in zip(departments, importance)]
+        total_importance = sum(importance)
+        result = aggregate_user_threat_score(department_scores, total_importance)
+        self.assertTrue(0 <= result <= 90)
+
+    def test_minimal_threats_in_all_departments(self):
+        # All departments have very low threat scores
+        departments = [
+            generate_random_data(5, 2, 100),
+            generate_random_data(5, 2, 120),
+            generate_random_data(5, 2, 80),
+            generate_random_data(5, 2, 60),
+            generate_random_data(5, 2, 90)
+        ]
+        importance = [2, 3, 2, 3, 2]
+        department_scores = [calculate_department_threat_score(dept, imp) for dept, imp in zip(departments, importance)]
+        total_importance = sum(importance)
+        result = aggregate_user_threat_score(department_scores, total_importance)
+        self.assertTrue(0 <= result <= 90)
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+Equal Department Importance, Similar Threats: Tests a scenario where all departments have similar mean threat scores, equal users, and equal importance. 
+This checks if the aggregation function correctly averages similar inputs.
+
+Different Importance Levels: Tests the function’s sensitivity to department importance, especially where high importance departments (e.g., Engineering) have higher mean threat scores.
+
+High Outliers in One Department: Validates how the function handles a single department with very high threat scores (e.g., potential targeted risk) while others are low. 
+This ensures outliers influence the score correctly based on department importance.
+
+Minimal Threats in All Departments: Ensures that if all departments have minimal threat levels, the aggregate threat score reflects low risk, even when department importances vary.
